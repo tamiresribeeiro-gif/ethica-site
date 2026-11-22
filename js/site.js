@@ -55,3 +55,44 @@ document.getElementById('ano').textContent = new Date().getFullYear();
     window.addEventListener('load', function(){ carregar(1); });
     iniciar();
   })();
+  /* coverflow das finalidades */
+  document.querySelectorAll('.cf').forEach(function(cf){
+    var palco = cf.querySelector('.cf-palco'), itens = Array.prototype.slice.call(cf.querySelectorAll('.cf-item'));
+    var pontos = cf.querySelector('.cf-pontos'), n = itens.length, atual = 0;
+    if (!n) return;
+    itens.forEach(function(it, i){
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Finalidade ' + (i + 1) + ' de ' + n);
+      b.addEventListener('click', function(){ ir(i); }); pontos.appendChild(b);
+      it.addEventListener('click', function(e){ if (i !== atual){ e.preventDefault(); ir(i); } });
+    });
+    function desenhar(){
+      var cel = window.matchMedia('(max-width:700px)').matches;
+      var passo = cel ? 58 : 66, longe = cel ? 1 : 2;
+      var maxH = 0;
+      itens.forEach(function(it, i){
+        var d = (i - atual + n) % n; if (d > n / 2) d -= n;
+        var ad = Math.abs(d), s = d < 0 ? -1 : 1;
+        var tx = d * passo, rot = ad === 0 ? 0 : -s * 38, esc = ad === 0 ? 1 : (ad === 1 ? .82 : .66);
+        if (ad === 2) tx = s * (passo + (cel ? 40 : 52));
+        it.style.transform = 'translateX(-50%) translateX(' + tx + '%) rotateY(' + rot + 'deg) scale(' + esc + ')';
+        it.style.zIndex = 10 - ad;
+        it.style.opacity = ad > longe ? 0 : (ad === 2 ? .55 : 1);
+        it.style.pointerEvents = ad > longe ? 'none' : '';
+        it.classList.toggle('ativo', ad === 0);
+        it.setAttribute('aria-hidden', ad === 0 ? 'false' : 'true');
+        it.tabIndex = ad === 0 ? 0 : -1;
+        maxH = Math.max(maxH, it.offsetHeight);
+      });
+      if (maxH) palco.style.height = (maxH + 20) + 'px';
+      pontos.querySelectorAll('button').forEach(function(b, i){ if (i === atual) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    }
+    function ir(i){ atual = (i + n) % n; desenhar(); }
+    cf.querySelector('.cf-ant').addEventListener('click', function(){ ir(atual - 1); });
+    cf.querySelector('.cf-prox').addEventListener('click', function(){ ir(atual + 1); });
+    palco.addEventListener('keydown', function(e){ if (e.key === 'ArrowRight'){ e.preventDefault(); ir(atual + 1); } if (e.key === 'ArrowLeft'){ e.preventDefault(); ir(atual - 1); } });
+    var x0 = null;
+    palco.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; }, {passive:true});
+    palco.addEventListener('touchend', function(e){ if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) ir(atual + (dx < 0 ? 1 : -1)); x0 = null; }, {passive:true});
+    window.addEventListener('resize', desenhar); window.addEventListener('load', desenhar);
+    ir(0);
+  });
